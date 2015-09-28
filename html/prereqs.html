@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Assumed Python knowledge &mdash; BMI3D 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="BMI3D 1.0 documentation" href="index.html" />
+    <link rel="next" title="Tasks" href="tasks.html" />
+    <link rel="prev" title="Installation" href="install.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tasks.html" title="Tasks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="install.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">BMI3D 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="assumed-python-knowledge">
+<h1>Assumed Python knowledge<a class="headerlink" href="#assumed-python-knowledge" title="Permalink to this headline">¶</a></h1>
+<p>In order to use this library well, it is assumed that you are pretty familiar with Python. For example, some of the medium concepts you should at least recognize include</p>
+<blockquote>
+<div><ul class="simple">
+<li>numpy/scipy</li>
+<li>how to make a python module</li>
+<li>&#8220;New&#8221; style inheritance and object-oriented programming in Python</li>
+<li>iterators and generators</li>
+</ul>
+</div></blockquote>
+<p>As with any software package in development, reading error messages and subsequent use of googling relevant portions of the message cannot be avoided.</p>
+<p>A deep understanding of the core functionality of this library requires knowledge of a few concepts which are not typically found in brief introductions to Python and which are uncommon in scientific data analyses. Once your experiment is all set up and debugged, it&#8217;s certainly possible for the experimenter to not need to know what&#8217;s under the hood. However, depending on how complicated your experiment setup is, you may want to spend some time learning some of the other libraries/functionality that this library is built on top of.</p>
+<div class="section" id="multiple-inheritance">
+<h2>Multiple inheritance<a class="headerlink" href="#multiple-inheritance" title="Permalink to this headline">¶</a></h2>
+<p>Multiple inheritance is a contentious topic, with large disagreement between various internet talking heads about whether it is necessary or should even exist. Your opinion on the matter is irrelevant. This library uses multiple inheritance and a metaclass constructor in order to embed user-selected &#8216;features&#8217; into &#8216;experiments&#8217; at runtime. There certainly are other implementation strategies which do not emply multiple inheritance, but what&#8217;s done is done. It would take much much less time to just learn multiple inheritance than it would to redo the library, and the effort would be pointless. Having an experimental setup where you can dynamically select or deselect large portions of functionality at runtime is going to be complicated no matter what you do.</p>
+<p>That&#8217;s enough philosophy. As an obvious prerequisite to understanding multiple inheritance, you should understand single inheritance! This is a good introduction: <a class="reference external" href="http://learnpythonthehardway.org/book/ex44.html">http://learnpythonthehardway.org/book/ex44.html</a></p>
+<p>This library uses new-style inheritance, where all classes inherit from the built-in type <tt class="docutils literal"><span class="pre">object</span></tt>. A key reason for inheritance to exist is so that children can choose to either call, modfiy, or override their parent&#8217;s methods. In classes inheriting from <tt class="docutils literal"><span class="pre">object</span></tt>, the &#8220;parent&#8217;s&#8221; attributes are accessed by use of the <tt class="docutils literal"><span class="pre">super</span></tt> function.</p>
+<p><tt class="docutils literal"><span class="pre">super</span></tt> lets you get your parent&#8217;s methods without knowing the name of your parent, which may be nice if you ever change the inheritance tree. (In Python 2, you still have to refer to your own class name, so annoying things can happen if you change the name of the child class or copy-paste what should be straightforward code from another class).</p>
+<p>With multiple inheritance, there is not a single &#8220;parent&#8221; (hence the quotes). Python instead creates a &#8220;method resolution order&#8221; (MRO), a unique ordering of the parents methods to go through one at a time. When you call <tt class="docutils literal"><span class="pre">super</span></tt>, you&#8217;re really just asking for the next method in the MRO, rather than an explicit parent. The object will not be constructed if a consistent MRO cannot be defined.</p>
+<p>This is a fairly advanced description of what <tt class="docutils literal"><span class="pre">super</span></tt> can do: <a class="reference external" href="https://rhettinger.wordpress.com/2011/05/26/super-considered-super/">https://rhettinger.wordpress.com/2011/05/26/super-considered-super/</a>. It&#8217;s written for Python 3 rather than Python 2 (not backwards compatible) so it&#8217;s more for reading than trying.</p>
+</div>
+<div class="section" id="using-multiple-processes">
+<h2>Using multiple processes<a class="headerlink" href="#using-multiple-processes" title="Permalink to this headline">¶</a></h2>
+<p>In experiments with many peripheral devices, data must be acquired and logged asynchronously. In this library, the &#8216;multiprocessing&#8217; module is the main workhorse for enabling asynchronous input/output functionality. In particular, multiprocessing is used for the webserver to spawn tasks (<tt class="docutils literal"><span class="pre">db.tasktrack</span></tt>), for acquiring data from sources (<tt class="docutils literal"><span class="pre">riglib.source</span></tt>) and for any BMI computation which cannot complete in the relatively short event loop (<tt class="docutils literal"><span class="pre">riglib.mp_calc</span></tt>).</p>
+<p>This is a decent introduction to multiprocessing: <a class="reference external" href="https://pymotw.com/2/multiprocessing/basics.html">https://pymotw.com/2/multiprocessing/basics.html</a></p>
+<p>Here&#8217;s a simple python example that doesn&#8217;t work:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Test case for CLDARecomputeParameters, to show non-blocking properties</span>
+<span class="c"># of the recomputation</span>
+<span class="n">work_queue</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+<span class="n">result_queue</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+
+<span class="n">work_queue</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">))</span>
+
+<span class="n">clda_worker</span> <span class="o">=</span> <span class="n">CLDARecomputeParameters</span><span class="p">(</span><span class="n">work_queue</span><span class="p">,</span> <span class="n">result_queue</span><span class="p">)</span>
+<span class="n">clda_worker</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<span class="k">while</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result_queue</span><span class="o">.</span><span class="n">get_nowait</span><span class="p">()</span>
+        <span class="k">break</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&#39;stuff&#39;</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="database-integration-with-django">
+<h2>Database integration with Django<a class="headerlink" href="#database-integration-with-django" title="Permalink to this headline">¶</a></h2>
+<p>The ability of this library to do automatic data logging and file linking is a great feature of this library (and arguably, makes its complexity worthwhile). We recommend that you go through the introductory Django tutorial (<a class="reference external" href="https://docs.djangoproject.com/en/dev/intro/tutorial01/">https://docs.djangoproject.com/en/dev/intro/tutorial01/</a>), which shows you how to build a simple Django application fairly similar to what we do during the experiment logging (though with a less complicated user interface).</p>
+</div>
+</div>
+<div class="section" id="helpful-python-hints">
+<h1>Helpful python hints<a class="headerlink" href="#helpful-python-hints" title="Permalink to this headline">¶</a></h1>
+<p>Some clues on the more tricky/magical aspects of the code</p>
+<ul>
+<li><dl class="first docutils">
+<dt><tt class="docutils literal"><span class="pre">getattr</span></tt></dt>
+<dd><p class="first">If you have an object <tt class="docutils literal"><span class="pre">obj</span></tt> with attribute <tt class="docutils literal"><span class="pre">param</span></tt>, the two lines below are equivalent:</p>
+<div class="highlight-python"><div class="highlight"><pre>In [3]: class TestClass(object):
+   ...:     def __init__(self):
+   ...:         self.param = &#39;value&#39;
+   ...:
+
+In [4]: obj = TestClass()
+
+In [5]: obj.param
+Out[5]: &#39;value&#39;
+
+In [6]: getattr(obj, &#39;param&#39;)
+Out[6]: &#39;value&#39;
+</pre></div>
+</div>
+<p class="last">The second one allows you to get an attribute of an object by specifying a string name. This can be useful in selecting which attribute of the object you want on the fly.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">Putting a <tt class="docutils literal"><span class="pre">__init__.py</span></tt> into a folder makes a module</p>
+</li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Assumed Python knowledge</a><ul>
+<li><a class="reference internal" href="#multiple-inheritance">Multiple inheritance</a></li>
+<li><a class="reference internal" href="#using-multiple-processes">Using multiple processes</a></li>
+<li><a class="reference internal" href="#database-integration-with-django">Database integration with Django</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#helpful-python-hints">Helpful python hints</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="install.html"
+                        title="previous chapter">Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tasks.html"
+                        title="next chapter">Tasks</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/prereqs.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="tasks.html" title="Tasks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="install.html" title="Installation"
+             >previous</a> |</li>
+        <li><a href="index.html">BMI3D 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, James Gao; 2015, James Gao, Helene Moorman, Suraj Gowda, Siddharth Dangi.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
