@@ -1,0 +1,300 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Brain-machine interface (BMI) code &mdash; BMI3D 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="BMI3D 1.0 documentation" href="index.html" />
+    <link rel="next" title="Incorporating peripheral data sources into the experiment" href="data_sources.html" />
+    <link rel="prev" title="The Browser Interface" href="tracker.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="data_sources.html" title="Incorporating peripheral data sources into the experiment"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tracker.html" title="The Browser Interface"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">BMI3D 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="brain-machine-interface-bmi-code">
+<h1>Brain-machine interface (BMI) code<a class="headerlink" href="#brain-machine-interface-bmi-code" title="Permalink to this headline">¶</a></h1>
+<p>The BMI code is split between the <tt class="docutils literal"><span class="pre">tasks</span></tt> module and the <tt class="docutils literal"><span class="pre">bmi</span></tt> module. The <tt class="docutils literal"><span class="pre">bmi</span></tt> module contains the &#8220;low-level&#8221; components of the BMI, including the decoding algorithm, the assist methods, the adaptive filtering techinques for parameter fitting, etc. The <tt class="docutils literal"><span class="pre">tasks</span></tt> module integrates these components to enable the BMI subject to perform a target-capture task.</p>
+<div class="section" id="architecure-of-bmiloop">
+<h2>Architecure of BMILoop<a class="headerlink" href="#architecure-of-bmiloop" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">BMILoop</span></tt> is the top-level interface for just running a BMI prosthesis, without any particular task structure. (Or alternatively, you might call this an unstructured task). It&#8217;s comprised of many smaller components, including machinery to adapt the decoder in closed-loop (CLDA), assistive shared control, and the interaction with the device itself.</p>
+<img alt="_images/bmi_loop.png" src="_images/bmi_loop.png" />
+<p>In our BMI architecture, we enforce a separation between the &#8220;decoder&#8221; and the &#8220;plant&#8221;. This distinction is vacuous for a virtual plant (e.g., a cursor on a screen) where the state of the plant is purely software controlled. However, the distinction is important for a physically actuated plant. Not every position commanded by a linear decoder can be physically achieved by a robot (or is safe to the subject), and movement between two different position states will require some actuation delay. Thus, modularity for different robotic control/guidance methods was prioritized, with the expense of a slightly more complex than necessary interface for virtual &#8220;plants&#8221;.</p>
+<p>The major sub-components of the BMILoop are:</p>
+<p><strong>Feature extractor</strong>
+This first step in the loop processes &#8220;raw&#8221; data from the neural recording system (e.g., spikes, field potentials). Features extracted are typically simple features (number of event counts for spikes, bands in a set of frequency bands for LFP). Feature extractor classes are located in <tt class="docutils literal"><span class="pre">riglib.bmi.extractor</span></tt>. The extractor class and configuration parameters are stored in the Decoder object as decoders are seeded/calibrated for a particular type of feature extractor (<tt class="docutils literal"><span class="pre">extractor_cls</span></tt> and <tt class="docutils literal"><span class="pre">extractor_kwargs</span></tt> attributes)</p>
+<p><strong>Feature accumulator</strong>
+(Note: the formalism for this module is still in progress!)
+Features must sometimes be combined across time. For instance, for spike BMIs, the BMI loop may run at 60 Hz to match the display rate, but the decoder may expect to get a new observation only at 10 Hz. Thus some rate matching must be applied (specifically in this case, 6 observations must be added together). This operation may be different across decoder types. For instance, for LFP decoders where the feature extractor always outputs a power estimate for the last 200ms, the proper operation is simply downsampling to match from the iteration rate of the task to the observation rate of the decoder.</p>
+<p><a class="reference internal" href="decoder.html"><em>Decoders</em></a>
+This is the core workhorse of the system, inferring the intended plant state x_t from observations y_t (and possibly combined with shared control u_t)</p>
+<p><strong>Goal calculator</strong>
+For assistive control and CLDA (see below), it may be necessary to specify the <tt class="docutils literal"><span class="pre">target_state</span></tt> $x_t^*$. The target state is specified entirely by the task, i.e., completely independently of the decoder.</p>
+<p><strong>Assister</strong>
+Generates a shared control vector u_t to be combined with the neural control component produced by the Decoder. This is sometimes used when starting the decoder parameters from adverse conditions, where you stil want the decoder (temporarily) to have a shared machine control component in order to span the control space as the Decoder improves.</p>
+<p><strong>Closed-loop decoder adaptation (CLDA)</strong>
+Closed-loop decoder adaptation (CLDA) can be used to retune the parameters of a Decoder while the subject operates the prosthesis in real time. The CLDA block consists of two sub-blocks, the <tt class="docutils literal"><span class="pre">Learner</span></tt> and the <tt class="docutils literal"><span class="pre">Updater</span></tt>.</p>
+<p><em>Learner</em>
+From task goals or otherwise, estimate the instantaneous <em>intended</em> next state $x_t^{int}$ from target state $x_t^*$. The output of this block is to periodically produce <em>batches</em> of pairs of intended kinematics and neural observations lbrace(x_t^{int}, y_t)rbrace_{t=t_0}^{t_1} which are then used by the updater to update the decoder parameters $theta$.</p>
+<p><em>Updater</em>
+The updater implements an update rule to combine update the decoder parameters $theta$ using an update rule on the old parameters and the batch produced by the learner.</p>
+</div>
+<div class="section" id="plant-interface">
+<h2>Plant interface<a class="headerlink" href="#plant-interface" title="Permalink to this headline">¶</a></h2>
+<p>A unified plant interface is, at present, lacking. Most plants used in the software to date inherit from the module <tt class="docutils literal"><span class="pre">riglib.plants</span></tt>, including the cursor, planar kinematic chains, and active upper-arm exoskeleton. A separate interface currently exists (not in this repository) for an exo where sensor feedback is streamed continuously rather than being polled on demand. The two cases are different since if sensor feedback is continuously streamed, a separate asynchronous process is required to collect and save the data, similar to the streamed neural data.</p>
+<dl class="class">
+<dt id="riglib.plants.Plant">
+<em class="property">class </em><tt class="descclassname">riglib.plants.</tt><tt class="descname">Plant</tt><big>(</big><em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#riglib.plants.Plant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic interface for task-plant interaction</p>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="riglib.plants.Plant.drive">
+<tt class="descname">drive</tt><big>(</big><em>decoder</em><big>)</big><a class="headerlink" href="#riglib.plants.Plant.drive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call this function to &#8216;drive&#8217; the plant to the state specified by the decoder</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>decoder</strong> : bmi.Decoder instance</p>
+<blockquote>
+<div><p>Decoder used to estimate the state of/control the plant</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>None</strong> :</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="initializing-a-decoder">
+<h2>Initializing a Decoder<a class="headerlink" href="#initializing-a-decoder" title="Permalink to this headline">¶</a></h2>
+<p>There are at least two contexts in which one would need to &#8220;train&#8221; (as opposed to &#8220;re-train&#8221; or &#8220;adapt&#8221;) a Decoder. The first is to create an entirely new set of Decoder parameters from a &#8220;seeding&#8221; session. For instance, it is common to create a new decoder based on the neural response to subjects watching cursor movements without any control over the cursor (i.e. a &#8220;visual feedback&#8221; task). A second case where one would want to create a new Decoder object might be to do a &#8220;batch&#8221; recalibration <a class="reference internal" href="#gilja2012" id="id1">[Gilja2012]</a>.</p>
+<p>Functions to train new decoder objects are in the module <tt class="docutils literal"><span class="pre">riglib.bmi.train</span></tt>.</p>
+<p>When using the browser interface, several files are involved in the machinery of creating a new Decoder:</p>
+<dl class="docutils">
+<dt>db/tracker/namelist.py</dt>
+<dd>The possible configuration parameters (algorithm, plant, state space, etc.)</dd>
+</dl>
+<p>db/tracker/views.py</p>
+<dl class="docutils">
+<dt>db/html/templates/bmi.html</dt>
+<dd>Handles the UI display of the BMI training sub-GUI. This only shows up for tasks which have the &#8216;is_bmi_seed&#8217; class attribute as True</dd>
+</dl>
+<p>db/html/static/resources/js/bmi.js</p>
+<dl class="docutils">
+<dt>db/tracker/ajax.py</dt>
+<dd>Handles the form submission from the BMI training sub-GUI</dd>
+<dt>db/trainbmi.py</dt>
+<dd></dd>
+<dt>riglib/bmi/train.py</dt>
+<dd><span class="target" id="module-riglib.bmi.train"></span>Methods to create various types of Decoder objects from data(files)</dd>
+</dl>
+</div>
+<div class="section" id="clda">
+<h2>CLDA<a class="headerlink" href="#clda" title="Permalink to this headline">¶</a></h2>
+<p><strong>Learner</strong></p>
+<p>The Learner is an object which estimates the &#8220;intention&#8221; of the subject performing the task.</p>
+<dl class="class">
+<dt id="riglib.bmi.clda.Learner">
+<em class="property">class </em><tt class="descclassname">riglib.bmi.clda.</tt><tt class="descname">Learner</tt><big>(</big><em>batch_size</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#riglib.bmi.clda.Learner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Classes for estimating the &#8216;intention&#8217; of the BMI operator, inferring the intention from task goals.</p>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="riglib.bmi.clda.Learner.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>batch_size</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#riglib.bmi.clda.Learner.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate a Learner for estimating intention during CLDA</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>batch_size: int</strong> :</p>
+<blockquote>
+<div><p>number of samples used to estimate each new decoder parameter setting</p>
+</div></blockquote>
+<p><strong>done_states: list of strings, optional</strong> :</p>
+<blockquote>
+<div><p>states of the task which end a batch, regardless of the length of the batch. default = []</p>
+</div></blockquote>
+<p><strong>reset_states: list of strings, optional</strong> :</p>
+<blockquote class="last">
+<div><p>states of the task which, if encountered, reset the batch regardless of its length. default = []</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<p>The learner can be configured to run in trial-based mode, a time-based mode, or some combination of the two. This must be specified when the object is instantiated, using the batch_size, done_states and reset_states. For instance, with the BMIControlMulti task state machine, we can configure the learner to operate in a purely time based mode by specifying:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">done_states</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">reset_states</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="n">N</span>
+</pre></div>
+</div>
+<p>or in a purely trial-based mode by specifying:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">done_states</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;reward&#39;</span><span class="p">,</span> <span class="s">&#39;hold_penalty&#39;</span><span class="p">]</span>
+<span class="n">reset_states</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;timeout_penalty&#39;</span><span class="p">]</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="simulating-bmi">
+<h2>Simulating BMI<a class="headerlink" href="#simulating-bmi" title="Permalink to this headline">¶</a></h2>
+<p>Simulations can be a useful tool for BMI design. Experimental evidence suggests that the offline accuracy of linear decoders often does not translate to good closed-loop control (e.g., <a class="reference internal" href="#koyama2010" id="id2">[Koyama2010]</a>, [Ganguly_2010]). This is perhaps due to the inherent feedback differences between BMI control during which the subject only has visual feedback, unlike arm control during which congruent proprioceptive feedback is also available. Furthermore, BMIs require the brain to solve a control problem that is different from the problem of controlling the natural arm because (1) the dynamics of the BMI plant are different from arm dynamics and (2) the BMI is controlled using a different neural pathway than the natural arm control mechanism. Therefore, we use simulations to compare the performance of different decoding algorithms instead of comparisons of offline reconstruction accuracy.</p>
+<p>BMI simulation involve the the &#8220;task&#8221; program as well as the BMI software. After installing the
+software, control of a 2D cursor can be simulated by running the script:</p>
+<div class="highlight-python"><div class="highlight"><pre>run $HOME/code/bmi3d/tests/sim_clda/sim_clda_multi.py --alg=RML
+</pre></div>
+</div>
+<p>where RML is an example of a CLDA algorithm that can be simulated using the script. The basic premise
+behind all of the implemented simulations (as of May 2014) is that the spike rates/time-stamps of
+a population of neurons as a response to the stimulus of &#8220;intended&#8221; BMI state change, or intended
+kinematics. Intention is simulated as a feedback controller. (see riglib.bmi.feedback_controllers
+for examples).</p>
+<table class="docutils citation" frame="void" id="gilja2012" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Gilja2012]</a></td><td><ol class="first last upperalpha simple" start="22">
+<li>Gilja*, P. Nuyujukian*, C. A. Chestek, J. P. Cunningham, B. M. Yu, J. M. Fan, M. M. Churchland, M. T. Kaufman, J. C. Kao, S. I. Ryu, and K. V. Shenoy, “A high-performance neural prosthesis enabled by control algorithm design,” Nature Neuroscience, vol. 15, no. 12, pp. 1752–1757, Nov. 2012.</li>
+</ol>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="koyama2010" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Koyama2010]</a></td><td>Koyama S., Chase S. M., Whitford A. S., Velliste M., Schwartz A. B., and Kass R. E. Comparison of brain-computer interface decoding algorithms in open-loop and closed-loop control. J. Comput. Neurosci., 29(1-2):73–87, August 2010.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="ganguly2010" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Ganguly2010]</td><td>Ganguly K. and Carmena J. M. Neural Correlates of Skill Acquisition with a Cortical Brain-Machine Interface. Journal of Motor Behavior, (September 2012):37–41, 2010</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Brain-machine interface (BMI) code</a><ul>
+<li><a class="reference internal" href="#architecure-of-bmiloop">Architecure of BMILoop</a></li>
+<li><a class="reference internal" href="#plant-interface">Plant interface</a></li>
+<li><a class="reference internal" href="#initializing-a-decoder">Initializing a Decoder</a></li>
+<li><a class="reference internal" href="#clda">CLDA</a></li>
+<li><a class="reference internal" href="#simulating-bmi">Simulating BMI</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tracker.html"
+                        title="previous chapter">The Browser Interface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="data_sources.html"
+                        title="next chapter">Incorporating peripheral data sources into the experiment</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/bmi.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="np-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="data_sources.html" title="Incorporating peripheral data sources into the experiment"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tracker.html" title="The Browser Interface"
+             >previous</a> |</li>
+        <li><a href="index.html">BMI3D 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, James Gao; 2015, James Gao, Helene Moorman, Suraj Gowda, Siddharth Dangi.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
