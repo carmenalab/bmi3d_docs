@@ -71,6 +71,10 @@ git clone https://github.com/carmenalab/brain-python-interface.git bmi3d
 </div>
 <div class="section" id="setting-up-the-operating-system">
 <h2>Setting up the operating system<a class="headerlink" href="#setting-up-the-operating-system" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This step is only if you are using the NI PCI 6503 card. If not, skip it! Or if you need a particular kernel version for a different reason, you should be able to adapt these instructions</p>
+</div>
 <p>The bmi3d software is written primarily in Python. It has
 primarily been tested in operation in Ubuntu linux, though some testing has been
 done for CentOS 6. Ubuntu is substantially easier to set up, and these instructions
@@ -388,6 +392,22 @@ As the testing user
 - make sure group ownership and file permissions allow the testing user to read data files
 - mkdir $BMI3D/test_output</p>
 </div>
+<div class="section" id="configuring-ipython">
+<h2>Configuring ipython<a class="headerlink" href="#configuring-ipython" title="Permalink to this headline">¶</a></h2>
+<p>For quick analyses from the command line, it can be useful to have ipython pre-loaded with some commonly used modules. For complete instructions on how to set this up, see <a class="reference external" href="https://ipython.org/ipython-doc/dev/config/intro.html">https://ipython.org/ipython-doc/dev/config/intro.html</a>. You can make a default ipython profile by executing the shell command:</p>
+<div class="highlight-python"><div class="highlight"><pre>ipython profile create
+</pre></div>
+</div>
+<p>Then edit the newly create configuration file to look something like</p>
+<dl class="docutils">
+<dt>c.InteractiveShellApp.exec_lines = [</dt>
+<dd>&#8220;from db import dbfunctions as dbfn&#8221;,
+&#8220;from db.tracker import models&#8221;,
+&#8220;import numpy as np&#8221;,
+&#8220;import matplotlib.pyplot as plt&#8221;,</dd>
+</dl>
+<p>]</p>
+</div>
 </div>
 
 
@@ -424,6 +444,7 @@ As the testing user
 <li><a class="reference internal" href="#rsync">Rsync</a></li>
 <li><a class="reference internal" href="#configuration-files">Configuration files</a></li>
 <li><a class="reference internal" href="#automatic-testing">Automatic testing</a></li>
+<li><a class="reference internal" href="#configuring-ipython">Configuring ipython</a></li>
 </ul>
 </li>
 </ul>

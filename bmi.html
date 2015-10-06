@@ -57,10 +57,9 @@
             
   <div class="section" id="brain-machine-interface-bmi-code">
 <h1>Brain-machine interface (BMI) code<a class="headerlink" href="#brain-machine-interface-bmi-code" title="Permalink to this headline">¶</a></h1>
-<p>The BMI code is split between the <tt class="docutils literal"><span class="pre">tasks</span></tt> module and the <tt class="docutils literal"><span class="pre">bmi</span></tt> module. The <tt class="docutils literal"><span class="pre">bmi</span></tt> module contains the &#8220;low-level&#8221; components of the BMI, including the decoding algorithm, the assist methods, the adaptive filtering techinques for parameter fitting, etc. The <tt class="docutils literal"><span class="pre">tasks</span></tt> module integrates these components to enable the BMI subject to perform a target-capture task.</p>
 <div class="section" id="architecure-of-bmiloop">
 <h2>Architecure of BMILoop<a class="headerlink" href="#architecure-of-bmiloop" title="Permalink to this headline">¶</a></h2>
-<p><tt class="docutils literal"><span class="pre">BMILoop</span></tt> is the top-level interface for just running a BMI prosthesis, without any particular task structure. (Or alternatively, you might call this an unstructured task). It&#8217;s comprised of many smaller components, including machinery to adapt the decoder in closed-loop (CLDA), assistive shared control, and the interaction with the device itself.</p>
+<p><tt class="docutils literal"><span class="pre">BMILoop</span></tt> is the top-level interface for just running a BMI prosthesis, without any particular task structure. (Alternatively, you might oxymoronically call this an &#8220;unstructured task&#8221; if you are a neuroscientist). It&#8217;s comprised of many smaller components, including machinery to adapt the decoder in closed-loop (CLDA), assistive shared control, and the interaction with the device itself.</p>
 <img alt="_images/bmi_loop.png" src="_images/bmi_loop.png" />
 <p>In our BMI architecture, we enforce a separation between the &#8220;decoder&#8221; and the &#8220;plant&#8221;. This distinction is vacuous for a virtual plant (e.g., a cursor on a screen) where the state of the plant is purely software controlled. However, the distinction is important for a physically actuated plant. Not every position commanded by a linear decoder can be physically achieved by a robot (or is safe to the subject), and movement between two different position states will require some actuation delay. Thus, modularity for different robotic control/guidance methods was prioritized, with the expense of a slightly more complex than necessary interface for virtual &#8220;plants&#8221;.</p>
 <p>The major sub-components of the BMILoop are:</p>
@@ -133,7 +132,7 @@ The updater implements an update rule to combine update the decoder parameters $
 <dt>db/tracker/ajax.py</dt>
 <dd>Handles the form submission from the BMI training sub-GUI</dd>
 <dt>db/trainbmi.py</dt>
-<dd></dd>
+<dd><span class="target" id="module-db.trainbmi"></span>Functions to call appropriate constructor functions based on UI data and to link decoder objects in the database</dd>
 <dt>riglib/bmi/train.py</dt>
 <dd><span class="target" id="module-riglib.bmi.train"></span>Methods to create various types of Decoder objects from data(files)</dd>
 </dl>

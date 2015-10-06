@@ -157,10 +157,86 @@ git update-index --skip-worktree db/settings.py
 <div class="section" id="grouping-the-data-blocks">
 <h3>Grouping the data blocks<a class="headerlink" href="#grouping-the-data-blocks" title="Permalink to this headline">¶</a></h3>
 <p>Often different data blocks will not be independent and should be treated as a single block for &#8220;analysis&#8221; purposes. For example, if you want to calculate the performance of a particular set of decoder parameters, and you have two BMI blocks from the same day that used the same parameters, then for the purposes of analysis you may want to treat the data as having come from one big block. Once you have identified which blocks of data you want to analyze, this function can help group them:</p>
+<span class="target" id="module-db.dbfunctions"></span><p>Interface between the Django database methods/models and data analysis code</p>
+<dl class="function">
+<dt id="db.dbfunctions.group_ids">
+<tt class="descclassname">db.dbfunctions.</tt><tt class="descname">group_ids</tt><big>(</big><em>ids</em>, <em>grouping_fn=&lt;function &lt;lambda&gt; at 0x10f3b22a8&gt;</em><big>)</big><a class="headerlink" href="#db.dbfunctions.group_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Automatically group together a flat list of database IDs</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>ids: iterable</strong> :</p>
+<blockquote>
+<div><p>iterable of ints representing the ID numbers of TaskEntry objects to group</p>
+</div></blockquote>
+<p><strong>grouping_fn: callable, optional (default=sort by date); call signature: grouping_fn(task_entry)</strong> :</p>
+<blockquote class="last">
+<div><p>Takes a dbfn.TaskEntry as its only argument and returns a hashable and sortable object
+by which to group the ids</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <p>By default, the grouping is by date, as this is the most common use case that we have encountered.</p>
 </div>
 <div class="section" id="processing-data-blocks">
 <h3>Processing data blocks<a class="headerlink" href="#processing-data-blocks" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="db.dbfunctions.TaskEntry">
+<em class="property">class </em><tt class="descclassname">db.dbfunctions.</tt><tt class="descname">TaskEntry</tt><big>(</big><em>task_entry_id</em>, <em>dbname='default'</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#db.dbfunctions.TaskEntry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper class for the TaskEntry django class so that object-oriented methods 
+can be defined for TaskEntry blocks (e.g., for analysis methods for a particular experiment)
+without needing to modfiy the database model.</p>
+<p class="rubric">Methods</p>
+<dl class="method">
+<dt id="db.dbfunctions.TaskEntry.proc">
+<tt class="descname">proc</tt><big>(</big><em>filt=None</em>, <em>proc=None</em>, <em>cond=None</em>, <em>comb=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#db.dbfunctions.TaskEntry.proc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic trial-level data analysis function</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>filt: callable; call signature: trial_filter_fn(trial_msgs)</strong> :</p>
+<blockquote>
+<div><p>Function must return True/False values to determine if a set of trial messages constitutes a valid set for the analysis</p>
+</div></blockquote>
+<p><strong>proc: callable; call signature: trial_proc_fn(task_entry, trial_msgs)</strong> :</p>
+<blockquote>
+<div><p>The main workhorse function</p>
+</div></blockquote>
+<p><strong>cond: callable; call signature: trial_condition_fn(task_entry, trial_msgs)</strong> :</p>
+<blockquote>
+<div><p>Determine what the trial <em>subtype</em> is (useful for separating out various types of catch trials)</p>
+</div></blockquote>
+<p><strong>comb: callable; call signature: data_comb_fn(list)</strong> :</p>
+<blockquote>
+<div><p>Combine the list into the desired output structure</p>
+</div></blockquote>
+<p><strong>kwargs: optional keyword arguments</strong> :</p>
+<blockquote>
+<div><p>For &#8216;legacy&#8217; compatibility, you can also specify &#8216;trial_filter_fn&#8217; for &#8216;filt&#8217;, &#8216;trial_proc_fn&#8217; for &#8216;proc&#8217;, 
+&#8216;trial_condition_fn&#8217; for &#8216;cond&#8217;, and &#8216;data_comb_fn&#8217; for comb. These are ignored if any newer equivalents are specified.
+All other keyword arguments are passed to the &#8216;proc&#8217; function.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>result: list</strong> :</p>
+<blockquote class="last">
+<div><p>The results of all the analysis. The length of the returned list equals len(self.blocks). Sub-blocks
+grouped by tuples are combined into a single result.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 <p>Note that dbfunctions.TaskEntry does not inherit from <tt class="docutils literal"><span class="pre">db.tracker.models.TaskEntry</span></tt> because inhertinging from Django models is a little more involved than inheriting from a normal python class. Instead, dbfunctions.TaskEntry is a wrapper for db.tracker.models.TaskEntry.</p>
 <p>Instantiating a dbfunctions.TaskEntry object with a database ID number creates an object with basic attributes, e.g., names of linked HDF/plexon files. However, we will often want to perform analyses that are only meaningful for the particular task of a block. For this, we create task-specific child classes, one for each task. These are declared in the semi-misnamed analysis.performance module.</p>
 <p>To get one of these task-specific TaskEntry classes, you can do</p>
