@@ -210,7 +210,7 @@ D11                      13          43
 D12                      14          44        
 D13                      15          45        
 D14                      16          46        
-D15                      17          48
+D15                      17          47
 GND                      20          GND                
 =====================    ========    ===========   
 Digital ground should be connected to Arduino's ground.

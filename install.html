@@ -247,7 +247,7 @@ sudo pip install tables
 </div>
 <div class="section" id="managing-fstab">
 <h2>Managing fstab<a class="headerlink" href="#managing-fstab" title="Permalink to this headline">¶</a></h2>
-<p>Entries in the fstab (file system table) detail information when you give the command &#8216;mount $MOUNTPOINT&#8217;, so that you don&#8217;t have to specify all the permissions, etc. explicitly every time you issue the mount command. We add 3 entries to fstab:</p>
+<p>Entries in the fstab (file system table) detail information when you give the command <tt class="docutils literal"><span class="pre">mount</span> <span class="pre">$MOUNTPOINT</span></tt>, so that you don&#8217;t have to specify all the permissions, etc. explicitly every time you issue the mount command. We add 3 entries to fstab:</p>
 <div class="highlight-python"><div class="highlight"><pre>/dev/sdb1 /storage        ext4    defaults 0       0
 //project.eecs.berkeley.edu/carmena /backup cifs noauto,username=sgowda,domain=EECS,sec=ntlmssp,uid=localuser,dir_mode=0777,file_mode=0777 0 0
 //10.0.0.13/PlexonData /storage/plexon  smbfs   user=arc,pass=c@rmena,uid=1000,gid=1000 0 0
@@ -256,6 +256,16 @@ sudo pip install tables
 <p>The first specifies &#8216;/storage&#8217; as the mount-point for a second hard drive (/dev/sdb1 is the first partition on hard drive &#8216;b&#8217;). In our system, we run the operating system off a small solid-state drive (/dev/sda) and store data on a larger regular hard drive (/dev/sdb).</p>
 <p>The second specifies how to mount the offsite backup. In this case, the protocol is CIFS.</p>
 <p>The third entry specifies how to mount the data directory of the neural recording PC (in our case, this is a Windows PC provided by plexon). You may wish to also assign a different IP address to the neural recording PC. This line also will not work until you set up DHCP in the next step</p>
+</div>
+<div class="section" id="rsync-crontab">
+<h2>rsync &amp; crontab<a class="headerlink" href="#rsync-crontab" title="Permalink to this headline">¶</a></h2>
+<p>rsync is a unix command-line utility which can synchronize two folders (including remote folders). This funcitonality is similar to how cloud storage services (like Dropbox) operate, but for a single user. An example rsync command:</p>
+<div class="highlight-python"><div class="highlight"><pre>rsync -rlt --partial /home/lab/code/bmi3d/db/db.sql /backup/exorig/db_exorig.sql
+rsync -rlt --exclude=plexonlocal --exclude=video --partial /storage/ /backup/exorig/
+</pre></div>
+</div>
+<p>These two commands force <tt class="docutils literal"><span class="pre">/backup/exorig/db_exorig.sql</span></tt> to match the <tt class="docutils literal"><span class="pre">db.sql</span></tt> which is modified by the rig, and also to synchronize <tt class="docutils literal"><span class="pre">/storage</span></tt> with <tt class="docutils literal"><span class="pre">/backup</span></tt>, where in our earlier modified <tt class="docutils literal"><span class="pre">/etc/fstab</span></tt>, <tt class="docutils literal"><span class="pre">/backup</span></tt> is an off-site storage directory which we network mounted.</p>
+<p>You can used the <tt class="docutils literal"><span class="pre">crontab</span></tt> utility to automatically run rsync commands at a certain time of the day, to make the synchronization automatic without human intervention.</p>
 </div>
 </div>
 <div class="section" id="network-configuration">
@@ -339,6 +349,25 @@ User helene</dd>
 </div></blockquote>
 <p>Then any subsequent ssh/scp commands can use &#8216;nucleus_tunnel&#8217; in place of &#8216;nucleus&#8217; and just work as if they were on the same local network as &#8216;nucleus&#8217;. Similarly, you can remotely view the web interface by pointing your browser to localhost:43002</p>
 </div>
+</div>
+<div class="section" id="peripheral-devices">
+<h1>Peripheral devices<a class="headerlink" href="#peripheral-devices" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="testing-the-nidaq-interface">
+<h2>Testing the NIDAQ interface<a class="headerlink" href="#testing-the-nidaq-interface" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">the NIDAQ card is deprecated!</p>
+</div>
+<p>The NIDAQ card uses the &#8216;comedi&#8217; device driver for linux, written in C. There is a wrapper for the library, pycomedi. Unfortunately we don&#8217;t seem to have properly configured things, so initializing the device doesn&#8217;t seem to work form python. Instead, the C version of the code must be used for initializing the device, after which the IO lanes can be read/written from python.</p>
+</div>
+<div class="section" id="renaming-serial-ports">
+<h2>Renaming serial ports<a class="headerlink" href="#renaming-serial-ports" title="Permalink to this headline">¶</a></h2>
+<p>Certain peripheral devices make use of serial ports. Linux assigns somewhat random names to serial ports, which can change based on the order in which they&#8217;re plugged in. This makes it annoying to write the name of the serial port in the code.</p>
+<p>These instructions help automatically rename serial ports: <a class="reference external" href="http://hintshop.ludvig.co.nz/show/persistent-names-usb-serial-devices/">http://hintshop.ludvig.co.nz/show/persistent-names-usb-serial-devices/</a></p>
+</div>
+</div>
+<div class="section" id="running-the-first-tasks">
+<h1>Running the first tasks<a class="headerlink" href="#running-the-first-tasks" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="running-the-django-server-for-the-first-time">
 <h2>Running the Django server for the first time<a class="headerlink" href="#running-the-django-server-for-the-first-time" title="Permalink to this headline">¶</a></h2>
 <dl class="docutils">
@@ -363,13 +392,6 @@ python manage.py syncdb
 <div class="section" id="running-a-simple-task">
 <h2>Running a simple task<a class="headerlink" href="#running-a-simple-task" title="Permalink to this headline">¶</a></h2>
 <p>From the browser, start the visual_feedback_multi task. Make sure to check the &#8216;autostart&#8217; and &#8216;saveHDF&#8217; features (otherwise the task will not run), select the &#8216;centerout_2D_discerete&#8217; generator from the Sequence menu, and select &#8216;CursorPlant&#8217; in the arm_class.</p>
-</div>
-<div class="section" id="testing-the-nidaq-interface">
-<h2>Testing the NIDAQ interface<a class="headerlink" href="#testing-the-nidaq-interface" title="Permalink to this headline">¶</a></h2>
-<p>The NIDAQ card uses the &#8216;comedi&#8217; device driver for linux, written in C. There is a wrapper for the library, pycomedi. Unfortunately we don&#8217;t seem to have properly configured things, so initializing the device doesn&#8217;t seem to work form python. Instead, the C version of the code must be used for initializing the device, after which the IO lanes can be read/written from python.</p>
-</div>
-<div class="section" id="rsync">
-<h2>Rsync<a class="headerlink" href="#rsync" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="configuration-files">
 <h2>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h2>
@@ -432,16 +454,23 @@ As the testing user
 <li><a class="reference internal" href="#path-configuration">Path configuration</a></li>
 <li><a class="reference internal" href="#reboot">Reboot</a></li>
 <li><a class="reference internal" href="#managing-fstab">Managing fstab</a></li>
+<li><a class="reference internal" href="#rsync-crontab">rsync &amp; crontab</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#network-configuration">Network configuration</a><ul>
 <li><a class="reference internal" href="#dhcp">DHCP</a></li>
 <li><a class="reference internal" href="#nat">NAT</a></li>
 <li><a class="reference internal" href="#setting-up-a-gateway-machine">Setting up a gateway machine</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#peripheral-devices">Peripheral devices</a><ul>
+<li><a class="reference internal" href="#testing-the-nidaq-interface">Testing the NIDAQ interface</a></li>
+<li><a class="reference internal" href="#renaming-serial-ports">Renaming serial ports</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-the-first-tasks">Running the first tasks</a><ul>
 <li><a class="reference internal" href="#running-the-django-server-for-the-first-time">Running the Django server for the first time</a></li>
 <li><a class="reference internal" href="#running-a-simple-task">Running a simple task</a></li>
-<li><a class="reference internal" href="#testing-the-nidaq-interface">Testing the NIDAQ interface</a></li>
-<li><a class="reference internal" href="#rsync">Rsync</a></li>
 <li><a class="reference internal" href="#configuration-files">Configuration files</a></li>
 <li><a class="reference internal" href="#automatic-testing">Automatic testing</a></li>
 <li><a class="reference internal" href="#configuring-ipython">Configuring ipython</a></li>
