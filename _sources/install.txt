@@ -14,63 +14,6 @@ The software should reside at the path $HOME/code/bmi3d, where $HOME is your hom
 This will also clone the core software in the repository and put it in the appropriately named folder
 
 
-Setting up the operating system
--------------------------------
-.. note :: This step is only if you are using the NI PCI 6503 card. If not, skip it! Or if you need a particular kernel version for a different reason, you should be able to adapt these instructions
-
-The bmi3d software is written primarily in Python. It has
-primarily been tested in operation in Ubuntu linux, though some testing has been
-done for CentOS 6. Ubuntu is substantially easier to set up, and these instructions 
-are geared toward an Ubuntu setup. 
-
-If you are using the NI6503 card to send digital data, we recommend specifically
-using Ubuntu 12.04 LTS with kernel version 3.2.x-x. The version of
-Ubuntu may not be very important, but the specific kernel version 
-is important *if you are using the NI6503 card to send digital data*.
-If you are using an arduino microcontroller, you can skip this step. 
-
-The instructions below are intended for a clean install of Ubuntu. If 
-you do not do this on a clean installation, you must be careful with
-the instructions below, which actually remove later versions of the kernel.
-Although multiple versions of the kernel can coexist on the same system
-if you use a bootloader such as grub, we have chosen to keep only
-one version so as to avoid the possiblity in a deployment environment
-of accidentally rebooting the machine and using the wrong version.
-
-When installing Ubuntu, either create the installer with the correct
-kernel version (not sure exactly how to do this, but of course at some
-point the default installer was the version of the kernel we want) OR
-install any later version of the kernel and downgrade the image. Rough 
-instructions are below downgrade the kernel image::
-
-    sudo apt-get install linux-headers-3.2.0-60-generic
-    sudo apt-get install linux-image-3.2.0-60-generic
-    sudo apt-get remove --purge linux-image-3.11.0-*    
-    sudo apt-get remove --purge linux-headers-3.11.0-*
-    sudo apt-get install grub
-    
-    # Update the bootloader; a bootloader may not be strictly necessary..
-    sudo grub-mkconfig -o /boot/grub/grub.cfg
-    sudo update-grub
-
-These can also be found in the script $BMI3D/install/ubuntu_kernel_mod.sh.
-Of course if you install with a kernel version other than 3.11.0, make
-the appropriate replacement. You may have to run the purge commands more than
-once if apt-get decides to install another kernel version automatically when
-you remove the one you installed. 
-
-After checking in /boot/grub/grub.cfg that only kernel version 3.2.0-60 appears
-in the bootloader menu, restart the machine so that the kernel changes take
-effect. 
-
-Graphics
---------
-After downgrading the kernel on arc, the graphics are all messed up. The second monitor isn't detected and there's a weird border around the first screen. It seems like this has something to do with the kernel version change (i.e., the driver was kernel-version specific). So we do a::
-
-    sudo apt-get install nvidia-331
-
-where at the time of this writing, "331" was the latest stable version of the library available in the standard Ubuntu repository. At some point during the installation says it's "Building initial module for 3.2.0-60-generic". After installing, we reboot again. After reboot, the second monitor has things displayed on it again and everything looks normal!
-
 Library dependencies
 --------------------
 Many of the commands to execute below are available in the file $BMI3D/install/install.sh. It's highly recommended that you read through the instructions rather than blindly executing the script as every BMI rig will have its own slight differences
@@ -300,6 +243,9 @@ This forwards port 8000 (for Django) to local port 43002 and port 22 (for ssh) t
 
 Then any subsequent ssh/scp commands can use 'nucleus_tunnel' in place of 'nucleus' and just work as if they were on the same local network as 'nucleus'. Similarly, you can remotely view the web interface by pointing your browser to localhost:43002
 
+
+
+
 Peripheral devices
 ==================
 
@@ -308,6 +254,56 @@ Testing the NIDAQ interface
 .. note :: the NIDAQ card is deprecated!
 
 The NIDAQ card uses the 'comedi' device driver for linux, written in C. There is a wrapper for the library, pycomedi. Unfortunately we don't seem to have properly configured things, so initializing the device doesn't seem to work form python. Instead, the C version of the code must be used for initializing the device, after which the IO lanes can be read/written from python. 
+
+
+**Setting up the operating system**
+
+.. note :: This step is only if you are using the NI PCI 6503 card. If not, skip it! Or if you need a particular kernel version for a different reason, you should be able to adapt these instructions
+
+The bmi3d software is written primarily in Python. It has
+primarily been tested in operation in Ubuntu linux, though some testing has been
+done for CentOS 6. Ubuntu is substantially easier to set up, and these instructions 
+are geared toward an Ubuntu setup. 
+
+If you are using the NI6503 card to send digital data, we recommend specifically
+using Ubuntu 12.04 LTS with kernel version 3.2.x-x. The version of
+Ubuntu may not be very important, but the specific kernel version 
+is important *if you are using the NI6503 card to send digital data*.
+If you are using an arduino microcontroller, you can skip this step. 
+
+The instructions below are intended for a clean install of Ubuntu. If 
+you do not do this on a clean installation, you must be careful with
+the instructions below, which actually remove later versions of the kernel.
+Although multiple versions of the kernel can coexist on the same system
+if you use a bootloader such as grub, we have chosen to keep only
+one version so as to avoid the possiblity in a deployment environment
+of accidentally rebooting the machine and using the wrong version.
+
+When installing Ubuntu, either create the installer with the correct
+kernel version (not sure exactly how to do this, but of course at some
+point the default installer was the version of the kernel we want) OR
+install any later version of the kernel and downgrade the image. Rough 
+instructions are below downgrade the kernel image::
+
+    sudo apt-get install linux-headers-3.2.0-60-generic
+    sudo apt-get install linux-image-3.2.0-60-generic
+    sudo apt-get remove --purge linux-image-3.11.0-*    
+    sudo apt-get remove --purge linux-headers-3.11.0-*
+    sudo apt-get install grub
+    
+    # Update the bootloader; a bootloader may not be strictly necessary..
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+    sudo update-grub
+
+These can also be found in the script $BMI3D/install/ubuntu_kernel_mod.sh.
+Of course if you install with a kernel version other than 3.11.0, make
+the appropriate replacement. You may have to run the purge commands more than
+once if apt-get decides to install another kernel version automatically when
+you remove the one you installed. 
+
+After checking in /boot/grub/grub.cfg that only kernel version 3.2.0-60 appears
+in the bootloader menu, restart the machine so that the kernel changes take
+effect. 
 
 
 Renaming serial ports
@@ -394,3 +390,15 @@ c.InteractiveShellApp.exec_lines = [
     "import numpy as np",
     "import matplotlib.pyplot as plt",
 ]
+
+
+
+Graphics
+--------
+.. note :: This step is only needed if (1) you have an nvidia graphics card and (2) the 3-D stereo graphics do not render properly. If they do render okay, then don't change the driver!
+
+After downgrading the kernel on arc, the graphics are all messed up. The second monitor isn't detected and there's a weird border around the first screen. It seems like this has something to do with the kernel version change (i.e., the driver was kernel-version specific). So we do a::
+
+    sudo apt-get install nvidia-331
+
+where at the time of this writing, "331" was the latest stable version of the library available in the standard Ubuntu repository. At some point during the installation says it's "Building initial module for 3.2.0-60-generic". After installing, we reboot again. After reboot, the second monitor has things displayed on it again and everything looks normal!

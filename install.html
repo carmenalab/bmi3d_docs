@@ -69,61 +69,6 @@ git clone https://github.com/carmenalab/brain-python-interface.git bmi3d
 </div>
 <p>This will also clone the core software in the repository and put it in the appropriately named folder</p>
 </div>
-<div class="section" id="setting-up-the-operating-system">
-<h2>Setting up the operating system<a class="headerlink" href="#setting-up-the-operating-system" title="Permalink to this headline">¶</a></h2>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">This step is only if you are using the NI PCI 6503 card. If not, skip it! Or if you need a particular kernel version for a different reason, you should be able to adapt these instructions</p>
-</div>
-<p>The bmi3d software is written primarily in Python. It has
-primarily been tested in operation in Ubuntu linux, though some testing has been
-done for CentOS 6. Ubuntu is substantially easier to set up, and these instructions
-are geared toward an Ubuntu setup.</p>
-<p>If you are using the NI6503 card to send digital data, we recommend specifically
-using Ubuntu 12.04 LTS with kernel version 3.2.x-x. The version of
-Ubuntu may not be very important, but the specific kernel version
-is important <em>if you are using the NI6503 card to send digital data</em>.
-If you are using an arduino microcontroller, you can skip this step.</p>
-<p>The instructions below are intended for a clean install of Ubuntu. If
-you do not do this on a clean installation, you must be careful with
-the instructions below, which actually remove later versions of the kernel.
-Although multiple versions of the kernel can coexist on the same system
-if you use a bootloader such as grub, we have chosen to keep only
-one version so as to avoid the possiblity in a deployment environment
-of accidentally rebooting the machine and using the wrong version.</p>
-<p>When installing Ubuntu, either create the installer with the correct
-kernel version (not sure exactly how to do this, but of course at some
-point the default installer was the version of the kernel we want) OR
-install any later version of the kernel and downgrade the image. Rough
-instructions are below downgrade the kernel image:</p>
-<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install linux-headers-3.2.0-60-generic
-sudo apt-get install linux-image-3.2.0-60-generic
-sudo apt-get remove --purge linux-image-3.11.0-*
-sudo apt-get remove --purge linux-headers-3.11.0-*
-sudo apt-get install grub
-
-# Update the bootloader; a bootloader may not be strictly necessary..
-sudo grub-mkconfig -o /boot/grub/grub.cfg
-sudo update-grub
-</pre></div>
-</div>
-<p>These can also be found in the script $BMI3D/install/ubuntu_kernel_mod.sh.
-Of course if you install with a kernel version other than 3.11.0, make
-the appropriate replacement. You may have to run the purge commands more than
-once if apt-get decides to install another kernel version automatically when
-you remove the one you installed.</p>
-<p>After checking in /boot/grub/grub.cfg that only kernel version 3.2.0-60 appears
-in the bootloader menu, restart the machine so that the kernel changes take
-effect.</p>
-</div>
-<div class="section" id="graphics">
-<h2>Graphics<a class="headerlink" href="#graphics" title="Permalink to this headline">¶</a></h2>
-<p>After downgrading the kernel on arc, the graphics are all messed up. The second monitor isn&#8217;t detected and there&#8217;s a weird border around the first screen. It seems like this has something to do with the kernel version change (i.e., the driver was kernel-version specific). So we do a:</p>
-<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install nvidia-331
-</pre></div>
-</div>
-<p>where at the time of this writing, &#8220;331&#8221; was the latest stable version of the library available in the standard Ubuntu repository. At some point during the installation says it&#8217;s &#8220;Building initial module for 3.2.0-60-generic&#8221;. After installing, we reboot again. After reboot, the second monitor has things displayed on it again and everything looks normal!</p>
-</div>
 <div class="section" id="library-dependencies">
 <h2>Library dependencies<a class="headerlink" href="#library-dependencies" title="Permalink to this headline">¶</a></h2>
 <p>Many of the commands to execute below are available in the file $BMI3D/install/install.sh. It&#8217;s highly recommended that you read through the instructions rather than blindly executing the script as every BMI rig will have its own slight differences</p>
@@ -359,6 +304,51 @@ User helene</dd>
 <p class="last">the NIDAQ card is deprecated!</p>
 </div>
 <p>The NIDAQ card uses the &#8216;comedi&#8217; device driver for linux, written in C. There is a wrapper for the library, pycomedi. Unfortunately we don&#8217;t seem to have properly configured things, so initializing the device doesn&#8217;t seem to work form python. Instead, the C version of the code must be used for initializing the device, after which the IO lanes can be read/written from python.</p>
+<p><strong>Setting up the operating system</strong></p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This step is only if you are using the NI PCI 6503 card. If not, skip it! Or if you need a particular kernel version for a different reason, you should be able to adapt these instructions</p>
+</div>
+<p>The bmi3d software is written primarily in Python. It has
+primarily been tested in operation in Ubuntu linux, though some testing has been
+done for CentOS 6. Ubuntu is substantially easier to set up, and these instructions
+are geared toward an Ubuntu setup.</p>
+<p>If you are using the NI6503 card to send digital data, we recommend specifically
+using Ubuntu 12.04 LTS with kernel version 3.2.x-x. The version of
+Ubuntu may not be very important, but the specific kernel version
+is important <em>if you are using the NI6503 card to send digital data</em>.
+If you are using an arduino microcontroller, you can skip this step.</p>
+<p>The instructions below are intended for a clean install of Ubuntu. If
+you do not do this on a clean installation, you must be careful with
+the instructions below, which actually remove later versions of the kernel.
+Although multiple versions of the kernel can coexist on the same system
+if you use a bootloader such as grub, we have chosen to keep only
+one version so as to avoid the possiblity in a deployment environment
+of accidentally rebooting the machine and using the wrong version.</p>
+<p>When installing Ubuntu, either create the installer with the correct
+kernel version (not sure exactly how to do this, but of course at some
+point the default installer was the version of the kernel we want) OR
+install any later version of the kernel and downgrade the image. Rough
+instructions are below downgrade the kernel image:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install linux-headers-3.2.0-60-generic
+sudo apt-get install linux-image-3.2.0-60-generic
+sudo apt-get remove --purge linux-image-3.11.0-*
+sudo apt-get remove --purge linux-headers-3.11.0-*
+sudo apt-get install grub
+
+# Update the bootloader; a bootloader may not be strictly necessary..
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+sudo update-grub
+</pre></div>
+</div>
+<p>These can also be found in the script $BMI3D/install/ubuntu_kernel_mod.sh.
+Of course if you install with a kernel version other than 3.11.0, make
+the appropriate replacement. You may have to run the purge commands more than
+once if apt-get decides to install another kernel version automatically when
+you remove the one you installed.</p>
+<p>After checking in /boot/grub/grub.cfg that only kernel version 3.2.0-60 appears
+in the bootloader menu, restart the machine so that the kernel changes take
+effect.</p>
 </div>
 <div class="section" id="renaming-serial-ports">
 <h2>Renaming serial ports<a class="headerlink" href="#renaming-serial-ports" title="Permalink to this headline">¶</a></h2>
@@ -430,6 +420,18 @@ As the testing user
 </dl>
 <p>]</p>
 </div>
+<div class="section" id="graphics">
+<h2>Graphics<a class="headerlink" href="#graphics" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This step is only needed if (1) you have an nvidia graphics card and (2) the 3-D stereo graphics do not render properly. If they do render okay, then don&#8217;t change the driver!</p>
+</div>
+<p>After downgrading the kernel on arc, the graphics are all messed up. The second monitor isn&#8217;t detected and there&#8217;s a weird border around the first screen. It seems like this has something to do with the kernel version change (i.e., the driver was kernel-version specific). So we do a:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install nvidia-331
+</pre></div>
+</div>
+<p>where at the time of this writing, &#8220;331&#8221; was the latest stable version of the library available in the standard Ubuntu repository. At some point during the installation says it&#8217;s &#8220;Building initial module for 3.2.0-60-generic&#8221;. After installing, we reboot again. After reboot, the second monitor has things displayed on it again and everything looks normal!</p>
+</div>
 </div>
 
 
@@ -442,8 +444,6 @@ As the testing user
   <ul>
 <li><a class="reference internal" href="#">Installation</a><ul>
 <li><a class="reference internal" href="#downloading-the-software">Downloading the software</a></li>
-<li><a class="reference internal" href="#setting-up-the-operating-system">Setting up the operating system</a></li>
-<li><a class="reference internal" href="#graphics">Graphics</a></li>
 <li><a class="reference internal" href="#library-dependencies">Library dependencies</a></li>
 <li><a class="reference internal" href="#directory-structure">Directory structure</a></li>
 <li><a class="reference internal" href="#configuring-the-ubuntu-package-manager">Configuring the Ubuntu package manager</a></li>
@@ -474,6 +474,7 @@ As the testing user
 <li><a class="reference internal" href="#configuration-files">Configuration files</a></li>
 <li><a class="reference internal" href="#automatic-testing">Automatic testing</a></li>
 <li><a class="reference internal" href="#configuring-ipython">Configuring ipython</a></li>
+<li><a class="reference internal" href="#graphics">Graphics</a></li>
 </ul>
 </li>
 </ul>
