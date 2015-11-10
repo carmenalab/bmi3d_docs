@@ -251,6 +251,39 @@ Out[18]: 1
 <li><p class="first">&#64;property decorator</p>
 </li>
 <li><p class="first">keyword arguments</p>
+<blockquote>
+<div><p>Keyword arguments in python are arguments which can be indexed by name. (Standard function call arguments are, by contrast, positional arguments). An example:</p>
+<div class="highlight-python"><div class="highlight"><pre>In [2]: def fn(a=1, b=2):
+   ...:         print a, b
+   ...:
+
+In [3]: fn()
+1 2
+
+In [4]: fn(a=3)
+3 2
+
+In [5]: fn(b=4)
+1 4
+
+In [6]: fn(b=3, a=6)
+6 3
+</pre></div>
+</div>
+<p>Keyword arguments let you specify function arguments in an order-independent manner, so you don&#8217;t have to remember the exact order of arguments all the time. In addition, they let you supply default values for arguments so not every function call needs to explicitly list out all the arguments, to avoid repetition. Sometimes it&#8217;s useful for a function to not specify an exhaustive list of keyword arguments it expects. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>In [7]: def fn2(a=1, b=2, **kwargs):
+   ...:     print a, b
+   ...:     print kwargs
+   ...:
+
+In [8]: fn2(a=1, b=2, c=3)
+1 2
+{&#39;c&#39;: 3}
+</pre></div>
+</div>
+<p>We gave an extra keyword argument <tt class="docutils literal"><span class="pre">c</span></tt> which was not used by the function. As shown by the output of the function call, this gets packed into a dictionary <tt class="docutils literal"><span class="pre">kwargs</span></tt>.</p>
+<p>This can be useful if you want to just pass all the extra keyword arguments to another function, without needing to explicitly name them in the top-level function.</p>
+</div></blockquote>
 </li>
 </ul>
 </div>
