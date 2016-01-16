@@ -1,7 +1,7 @@
 # bmi3d_docs
 
 How to update the web docs for http://carmenalab.github.io/bmi3d_docs/::
-  
+```
   # Make a directory to store the HTML files
   lab@arc:~$ mkdir ~/code/docbmi3d/
   lab@arc:~$ cd ~/code/docbmi3d/
@@ -25,3 +25,4 @@ How to update the web docs for http://carmenalab.github.io/bmi3d_docs/::
   # commit and push to the bmi3d_docs repo with the newly created HTML files
   lab@arc:~/code/docbmi3d/html$ git commit -a -m "update"
   lab@arc:~/code/docbmi3d/html$ git push origin gh-pages
+  ```
