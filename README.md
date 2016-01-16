@@ -1,7 +1,7 @@
 # bmi3d_docs
 
-How to update the web docs for http://carmenalab.github.io/bmi3d_docs/
-.. code ::
+How to update the web docs for http://carmenalab.github.io/bmi3d_docs/::
+  
   # Make a directory to store the HTML files
   lab@arc:~$ mkdir ~/code/docbmi3d/
   lab@arc:~$ cd ~/code/docbmi3d/
@@ -18,7 +18,7 @@ How to update the web docs for http://carmenalab.github.io/bmi3d_docs/
   lab@arc:~/code/docbmi3d/html$ cd ~/code/bmi3d
   lab@arc:~/code/bmi3d$ cd docs
   lab@arc:~/code/bmi3d/docs$ vim Makefile 
-  ## Change BUILDDIR      = /home/lab/code/docbmi3d/ # (the parent of the 'html' folder)
+  # Change BUILDDIR      = /home/lab/code/docbmi3d/ # (the parent of the 'html' folder)
   # Build the HTML files
   lab@arc:~/code/bmi3d/docs$ make html
   lab@arc:~/code/bmi3d/docs$ cd ~/code/docbmi3d/html/
